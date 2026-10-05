@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none">
+  <defs>
+    <linearGradient id="cirkit-bg-grad-fav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#1e3a8a" />
+      <stop offset="50%" stopColor="#0f172a" />
+      <stop offset="100%" stopColor="#0284c7" />
+    </linearGradient>
+    <linearGradient id="cirkit-chip-grad-fav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#2563eb" />
+      <stop offset="100%" stopColor="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="cirkit-gold-grad-fav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#fbbf24" />
+      <stop offset="100%" stopColor="#f59e0b" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="92" height="92" rx="22" fill="url(#cirkit-bg-grad-fav)" stroke="#38bdf8" stroke-width="2.5" />
+  <path d="M 22 22 L 32 32 H 38" stroke="url(#cirkit-gold-grad-fav)" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="22" cy="22" r="3.5" fill="#fbbf24" />
+  <path d="M 78 22 L 68 32 H 62" stroke="url(#cirkit-gold-grad-fav)" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="78" cy="22" r="3.5" fill="#fbbf24" />
+  <path d="M 22 78 L 32 68 H 38" stroke="url(#cirkit-gold-grad-fav)" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="22" cy="78" r="3.5" fill="#fbbf24" />
+  <path d="M 78 78 L 68 68 H 62" stroke="url(#cirkit-gold-grad-fav)" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="78" cy="78" r="3.5" fill="#fbbf24" />
+  <rect x="34" y="34" width="32" height="32" rx="8" fill="url(#cirkit-chip-grad-fav)" stroke="#60a5fa" stroke-width="2" />
+  <circle cx="50" cy="50" r="5" fill="#ffffff" />
+  <circle cx="50" cy="50" r="2.5" fill="#38bdf8" />
+</svg>

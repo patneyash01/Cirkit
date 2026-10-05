@@ -1,0 +1,7 @@
+{
+  "name": "CirKit — Virtual Electronics Laboratory",
+  "description": "CirKit is a browser-based virtual electronics laboratory for engineering students to build, simulate, and analyze circuits with real-time electrical physics calculation, multimeter, oscilloscope, and AI tutor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
