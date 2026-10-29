@@ -15,6 +15,8 @@ interface Props {
   hoveredHoleId?: string | null;
   highlightGroupId?: string | null;
   activeHoleIds?: Set<string>;
+  showGridOverlay?: boolean;
+  snapTargetHole?: BreadboardHoleInfo | null;
 }
 
 export const BreadboardCanvasOverlay: React.FC<Props> = ({
@@ -25,10 +27,12 @@ export const BreadboardCanvasOverlay: React.FC<Props> = ({
   hoveredHoleId,
   highlightGroupId: externalHighlightGroupId,
   activeHoleIds,
+  showGridOverlay = true,
+  snapTargetHole,
 }) => {
   const [internalHoverHole, setInternalHoverHole] = useState<BreadboardHoleInfo | null>(null);
   const activeHover = hoveredHoleId ? BREADBOARD_HOLES_BY_ID.get(hoveredHoleId) || null : internalHoverHole;
-  const currentGroupId = externalHighlightGroupId || activeHover?.groupId;
+  const currentGroupId = externalHighlightGroupId || snapTargetHole?.groupId || activeHover?.groupId;
 
   const colSpacing = 20;
   const startX = 40;
@@ -501,6 +505,125 @@ export const BreadboardCanvasOverlay: React.FC<Props> = ({
           </g>
         );
       })}
+
+      {/* 8. INTERACTIVE BREADBOARD-STYLE GRID OVERLAY */}
+      {showGridOverlay && (
+        <g className="pointer-events-none" opacity="0.75">
+          {Array.from({ length: cols }).map((_, c) => {
+            const cx = startX + c * colSpacing;
+            return (
+              <g key={`grid-col-${c}`}>
+                {/* Vertical Tie Strip Alignment Guide: Rows A-E */}
+                <line
+                  x1={cx}
+                  y1={68}
+                  x2={cx}
+                  y2={124}
+                  stroke="#38bdf8"
+                  strokeWidth="0.8"
+                  strokeDasharray="2 3"
+                  opacity="0.45"
+                />
+                {/* Vertical Tie Strip Alignment Guide: Rows F-J */}
+                <line
+                  x1={cx}
+                  y1={172}
+                  x2={cx}
+                  y2={228}
+                  stroke="#38bdf8"
+                  strokeWidth="0.8"
+                  strokeDasharray="2 3"
+                  opacity="0.45"
+                />
+              </g>
+            );
+          })}
+        </g>
+      )}
+
+      {/* 9. GLOWING MAGNETIC PIN SNAP TARGET RETICLE */}
+      {snapTargetHole && (() => {
+        const localX = snapTargetHole.x - x;
+        const localY = snapTargetHole.y - y;
+        const isRail = snapTargetHole.row.includes('pos') || snapTargetHole.row.includes('neg');
+        const railLabel = snapTargetHole.row.includes('pos') ? '+ VCC Rail' : '- GND Rail';
+        const pinLabel = isRail
+          ? `${railLabel} (Col ${snapTargetHole.col})`
+          : `Pin ${snapTargetHole.row.toUpperCase()}-${snapTargetHole.col} (Strip ${snapTargetHole.col})`;
+
+        return (
+          <g transform={`translate(${localX}, ${localY})`} className="pointer-events-none">
+            {/* Outer animated magnetic snap halo */}
+            <circle
+              r="15"
+              fill="#22c55e"
+              fillOpacity="0.18"
+              stroke="#22c55e"
+              strokeWidth="1.5"
+              strokeDasharray="3 3"
+              className="animate-spin"
+              style={{ animationDuration: '4s' }}
+            />
+            {/* Pulsing snap ring */}
+            <circle
+              r="9"
+              fill="none"
+              stroke="#38bdf8"
+              strokeWidth="2.5"
+              className="animate-ping"
+              style={{ animationDuration: '1.2s' }}
+            />
+            {/* Core socket alignment center */}
+            <circle r="4.5" fill="#22c55e" stroke="#ffffff" strokeWidth="1.5" />
+
+            {/* Precision Crosshair guides */}
+            <line x1="-20" y1="0" x2="-8" y2="0" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
+            <line x1="8" y1="0" x2="20" y2="0" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
+            <line x1="0" y1="-20" x2="0" y2="-8" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
+            <line x1="0" y1="8" x2="0" y2="20" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" />
+
+            {/* Floating Magnetic Pin Snapped Badge */}
+            <g transform={`translate(0, ${localY < 60 ? 32 : -30})`}>
+              {/* Badge Background Shadow and Pill */}
+              <rect
+                x="-70"
+                y="-13"
+                width="140"
+                height="26"
+                rx="6"
+                fill="#0f172a"
+                fillOpacity="0.95"
+                stroke="#22c55e"
+                strokeWidth="1.5"
+                className="drop-shadow-md"
+              />
+              <text
+                x="0"
+                y="-1"
+                fill="#22c55e"
+                fontSize="8.5"
+                fontWeight="900"
+                textAnchor="middle"
+                fontFamily="monospace"
+                letterSpacing="0.5"
+              >
+                📍 SNAPPED TO PIN
+              </text>
+              <text
+                x="0"
+                y="9"
+                fill="#f8fafc"
+                fontSize="8"
+                fontWeight="700"
+                textAnchor="middle"
+                fontFamily="monospace"
+              >
+                {pinLabel}
+              </text>
+            </g>
+          </g>
+        );
+      })()}
     </g>
   );
 };

@@ -658,6 +658,61 @@ export const PhysicalComponentRenderer: React.FC<Props> = ({
       }
 
       // ----------------------------------------------------
+      // INDUCTOR (Coiled copper wire on ferrite core)
+      // ----------------------------------------------------
+      case 'inductor': {
+        const indMh = (properties.inductance ? properties.inductance * 1000 : 10).toFixed(0);
+        return (
+          <g>
+            {/* Tinned copper lead wires extending to breadboard holes */}
+            <line x1="-40" y1="0" x2="-22" y2="0" stroke="#94a3b8" strokeWidth="2.8" strokeLinecap="round" />
+            <line x1="22" y1="0" x2="40" y2="0" stroke="#94a3b8" strokeWidth="2.8" strokeLinecap="round" />
+
+            {/* Dark green / blue-gray axial ferrite core bobbin */}
+            <rect x="-22" y="-12" width="44" height="24" rx="5" fill="#1e3a8a" stroke="#0f172a" strokeWidth="1.2" />
+
+            {/* Copper wire windings coiled around core */}
+            {[-14, -8, -2, 4, 10].map(cx => (
+              <g key={cx}>
+                <rect x={cx} y="-12" width="4.5" height="24" rx="2" fill="#d97706" stroke="#b45309" strokeWidth="0.8" />
+                <line x1={cx + 1} y1="-10" x2={cx + 3.5} y2="10" stroke="#fef3c7" strokeWidth="0.8" opacity="0.6" />
+              </g>
+            ))}
+
+            <text x="0" y="24" fill="#0369a1" fontSize="9.5" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+              {indMh}mH
+            </text>
+          </g>
+        );
+      }
+
+      // ----------------------------------------------------
+      // AC VOLTAGE SOURCE / FUNCTION GENERATOR
+      // ----------------------------------------------------
+      case 'ac_source': {
+        const vAc = properties.voltage ?? 5.0;
+        const fAc = properties.frequency ?? 60;
+        return (
+          <g>
+            {/* Lead wires to breadboard */}
+            <line x1="-40" y1="0" x2="-35" y2="0" stroke="#1e293b" strokeWidth="2.8" strokeLinecap="round" />
+            <line x1="35" y1="0" x2="40" y2="0" stroke="#dc2626" strokeWidth="2.8" strokeLinecap="round" />
+
+            {/* Signal Generator Chassis */}
+            <rect x="-38" y="-24" width="76" height="48" rx="6" fill="#1e293b" stroke="#334155" strokeWidth="2" />
+            {/* Screen displaying sine wave */}
+            <rect x="-30" y="-18" width="60" height="22" rx="3" fill="#0f172a" stroke="#475569" strokeWidth="1" />
+            <path d="M -24 -7 Q -18 -15 -12 -7 T 0 -7 T 12 -7 T 24 -7" fill="none" stroke="#38bdf8" strokeWidth="1.8" />
+
+            {/* AC Voltage & Frequency display */}
+            <text x="0" y="16" fill="#f8fafc" fontSize="8.5" fontWeight="800" textAnchor="middle" fontFamily="monospace">
+              {vAc}V~ {fAc}Hz
+            </text>
+          </g>
+        );
+      }
+
+      // ----------------------------------------------------
       // 13. LDR (Photoresistor with CdS sinuous track)
       // ----------------------------------------------------
       case 'ldr': {

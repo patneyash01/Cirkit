@@ -12,6 +12,7 @@ import { SamplePoint } from '../../engine/oscilloscopeEngine';
 import { ComponentRenderer } from './ComponentRenderer';
 import { PhysicalComponentRenderer } from './PhysicalComponentRenderer';
 import { BreadboardCanvasOverlay } from './BreadboardCanvasOverlay';
+import { Grid, Magnet, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 
 interface Props {
   components: CircuitComponent[];
@@ -98,6 +99,7 @@ export const CircuitCanvas: React.FC<Props> = ({
   onToggleSwitch,
   onDropNewComponent,
   zoom,
+  onZoomChange,
   onUpdateWireColor,
   canvasRef,
   onOpenMultimeter,
@@ -145,6 +147,11 @@ export const CircuitCanvas: React.FC<Props> = ({
   } | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredHoleId, setHoveredHoleId] = useState<string | null>(null);
+
+  // Breadboard grid overlay and magnetic pin snapping states
+  const [snapTargetHole, setSnapTargetHole] = useState<BreadboardHoleInfo | null>(null);
+  const [showGridOverlay, setShowGridOverlay] = useState<boolean>(true);
+  const [isMagneticSnapEnabled, setIsMagneticSnapEnabled] = useState<boolean>(true);
 
   // Helper to snap to 20px grid
   const snapToGrid = (val: number, step = 20) => Math.round(val / step) * step;
@@ -197,10 +204,20 @@ export const CircuitCanvas: React.FC<Props> = ({
     connectedTerminals.add(`${c.toComponentId}:${c.toTerminalId}`);
   }
 
-  // Handle Drag & Drop from left library
+  // Handle Drag & Drop from left component library onto canvas with breadboard pin snapping
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
+
+    if (showBreadboard && isMagneticSnapEnabled) {
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      const nearHole = findNearestBreadboardHole(coords.x, coords.y, 30);
+      setSnapTargetHole(nearHole);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setSnapTargetHole(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -208,12 +225,35 @@ export const CircuitCanvas: React.FC<Props> = ({
     const type =
       e.dataTransfer.getData('application/cirkit-component') ||
       e.dataTransfer.getData('text/plain');
-    if (!type) return;
+    if (!type) {
+      setSnapTargetHole(null);
+      return;
+    }
 
     const coords = getCanvasCoords(e.clientX, e.clientY);
-    const snappedX = snapToGrid(coords.x);
-    const snappedY = snapToGrid(coords.y);
-    onDropNewComponent(type, snappedX, snappedY);
+    let finalX = snapToGrid(coords.x);
+    let finalY = snapToGrid(coords.y);
+
+    if (showBreadboard && isMagneticSnapEnabled) {
+      const nearHole = snapTargetHole || findNearestBreadboardHole(coords.x, coords.y, 30);
+      if (nearHole) {
+        // For two-terminal axial components (resistor, capacitor, inductor, diode, led),
+        // terminals are at (-40, 0) and (+40, 0).
+        // Setting finalX = nearHole.x + 40 places Terminal 1 (-40) directly in nearHole!
+        // Terminal 2 (+40) lands at nearHole.x + 80, which is precisely 4 breadboard columns over!
+        const isAxial = ['resistor', 'capacitor', 'inductor', 'diode', 'led'].includes(type);
+        if (isAxial) {
+          finalX = nearHole.x + 40;
+          finalY = nearHole.y;
+        } else {
+          finalX = nearHole.x;
+          finalY = nearHole.y;
+        }
+      }
+    }
+
+    onDropNewComponent(type, finalX, finalY);
+    setSnapTargetHole(null);
     onExitPlacementMode?.();
   };
 
@@ -294,8 +334,39 @@ export const CircuitCanvas: React.FC<Props> = ({
       const dy = e.clientY - dragState.startClientY;
       if (Math.hypot(dx, dy) > 3) {
         dragState.isMoved = true;
-        const newX = snapToGrid(dragState.originCompX + dx / zoom);
-        const newY = snapToGrid(dragState.originCompY + dy / zoom);
+        const rawX = dragState.originCompX + dx / zoom;
+        const rawY = dragState.originCompY + dy / zoom;
+        let newX = snapToGrid(rawX);
+        let newY = snapToGrid(rawY);
+
+        if (showBreadboard && isMagneticSnapEnabled) {
+          const comp = components.find(c => c.id === dragState.componentId);
+          const isAxial = comp && ['resistor', 'capacitor', 'inductor', 'diode', 'led'].includes(comp.type);
+          const checkX = isAxial ? rawX - 40 : rawX;
+          const checkY = rawY;
+          const nearHole = findNearestBreadboardHole(checkX, checkY, 26);
+
+          if (nearHole) {
+            setSnapTargetHole(nearHole);
+            if (isAxial) {
+              newX = nearHole.x + 40;
+              newY = nearHole.y;
+            } else {
+              newX = nearHole.x;
+              newY = nearHole.y;
+            }
+          } else {
+            const centerHole = findNearestBreadboardHole(rawX, rawY, 22);
+            if (centerHole) {
+              setSnapTargetHole(centerHole);
+              newX = centerHole.x;
+              newY = centerHole.y;
+            } else {
+              setSnapTargetHole(null);
+            }
+          }
+        }
+
         onUpdateComponentPosition(dragState.componentId, newX, newY);
       }
     } else if (panState) {
@@ -316,23 +387,41 @@ export const CircuitCanvas: React.FC<Props> = ({
     // If we were dragging a component, release it cleanly
     if (dragState) {
       setDragState(null);
+      setSnapTargetHole(null);
       return;
     }
 
     // In Placement Mode -> Place EXACTLY ONE component and IMMEDIATELY exit placement mode
     if (placementType) {
       const coords = getCanvasCoords(e.clientX, e.clientY);
-      const snappedX = snapToGrid(coords.x);
-      const snappedY = snapToGrid(coords.y);
+      let snappedX = snapToGrid(coords.x);
+      let snappedY = snapToGrid(coords.y);
+
+      if (showBreadboard && isMagneticSnapEnabled) {
+        const nearHole = snapTargetHole || findNearestBreadboardHole(coords.x, coords.y, 30);
+        if (nearHole) {
+          const isAxial = ['resistor', 'capacitor', 'inductor', 'diode', 'led'].includes(placementType);
+          if (isAxial) {
+            snappedX = nearHole.x + 40;
+            snappedY = nearHole.y;
+          } else {
+            snappedX = nearHole.x;
+            snappedY = nearHole.y;
+          }
+        }
+      }
+
       onDropNewComponent(placementType, snappedX, snappedY);
       onExitPlacementMode?.();
       setPanState(null);
+      setSnapTargetHole(null);
       return;
     }
 
     if (panState) {
       const didMove = panState.isMoved;
       setPanState(null);
+      setSnapTargetHole(null);
 
       // If user clicked without dragging -> DESELECT EVERYTHING
       if (!didMove) {
@@ -351,6 +440,7 @@ export const CircuitCanvas: React.FC<Props> = ({
     const handleGlobalMouseUp = () => {
       setDragState(null);
       setPanState(null);
+      setSnapTargetHole(null);
     };
     window.addEventListener('mouseup', handleGlobalMouseUp);
     return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
@@ -550,6 +640,7 @@ export const CircuitCanvas: React.FC<Props> = ({
         onMouseMove={handleMouseMove}
         onMouseUp={handleCanvasMouseUp}
         onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         <defs>
@@ -621,7 +712,10 @@ export const CircuitCanvas: React.FC<Props> = ({
               y={BREADBOARD_ORIGIN_Y}
               cols={BREADBOARD_COLS}
               onHoleClick={handleBreadboardHoleClick}
-              hoveredHoleId={hoveredHoleId}
+              hoveredHoleId={hoveredHoleId || snapTargetHole?.holeId}
+              highlightGroupId={snapTargetHole?.groupId}
+              showGridOverlay={showGridOverlay}
+              snapTargetHole={snapTargetHole}
             />
           )}
 
@@ -1128,6 +1222,69 @@ export const CircuitCanvas: React.FC<Props> = ({
           )}
         </g>
       </svg>
+
+      {/* Floating Interactive Breadboard Grid & Pin Snapping Controls */}
+      <div className="absolute bottom-4 left-4 z-20 flex items-center space-x-2 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-[#CBD5E1] shadow-md text-xs font-semibold text-[#172033]">
+        {/* Toggle Grid Overlay */}
+        <button
+          onClick={() => setShowGridOverlay(prev => !prev)}
+          className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+            showGridOverlay
+              ? 'bg-blue-50 text-blue-700 border border-blue-200 font-bold'
+              : 'text-[#64748B] hover:text-[#172033] hover:bg-slate-100 border border-transparent'
+          }`}
+          title="Toggle Breadboard-Style Pin Grid Alignment Lines"
+        >
+          <Grid className="w-3.5 h-3.5" />
+          <span>Grid: {showGridOverlay ? 'ON' : 'OFF'}</span>
+        </button>
+
+        <div className="w-[1px] h-4 bg-slate-200" />
+
+        {/* Toggle Magnetic Snap to Breadboard Pins */}
+        <button
+          onClick={() => setIsMagneticSnapEnabled(prev => !prev)}
+          className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+            isMagneticSnapEnabled
+              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold'
+              : 'text-[#64748B] hover:text-[#172033] hover:bg-slate-100 border border-transparent'
+          }`}
+          title="Toggle Magnetic Snap to Breadboard Pins & Holes"
+        >
+          <Magnet className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Pin Snap: {isMagneticSnapEnabled ? 'Active' : 'Free'}</span>
+        </button>
+
+        <div className="w-[1px] h-4 bg-slate-200" />
+
+        {/* Canvas Zoom Controls */}
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => onZoomChange(Math.max(0.4, Math.round((zoom - 0.1) * 10) / 10))}
+            className="p-1 rounded text-[#64748B] hover:text-[#172033] hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-3.5 h-3.5" />
+          </button>
+          <span className="w-10 text-center font-mono text-[11px] text-[#475569]">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            onClick={() => onZoomChange(Math.min(2.5, Math.round((zoom + 0.1) * 10) / 10))}
+            className="p-1 rounded text-[#64748B] hover:text-[#172033] hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onZoomChange(1.0)}
+            className="p-1 rounded text-[#64748B] hover:text-[#172033] hover:bg-slate-100 transition-colors cursor-pointer"
+            title="Reset Zoom (100%)"
+          >
+            <RotateCcw className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

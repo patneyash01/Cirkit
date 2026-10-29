@@ -15,6 +15,7 @@ import {
   RotateCw,
   Binary,
   Wrench,
+  GripVertical,
 } from 'lucide-react';
 
 interface Props {
@@ -57,6 +58,53 @@ const RealisticComponentThumbnail: React.FC<{ type: string }> = ({ type }) => {
           {/* Negative stripe */}
           <rect x="35" y="8" width="5" height="28" fill="#e2e8f0" />
           <text x="37.5" y="24" fill="#1e293b" fontSize="7" fontWeight="bold" textAnchor="middle">-</text>
+        </svg>
+      );
+
+    case 'inductor':
+      return (
+        <svg viewBox="0 0 64 48" className="w-12 h-10 drop-shadow-xs">
+          {/* Wire leads */}
+          <line x1="8" y1="24" x2="18" y2="24" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="46" y1="24" x2="56" y2="24" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" />
+          {/* Ferrite bobbin core */}
+          <rect x="18" y="15" width="28" height="18" rx="4" fill="#1e3a8a" stroke="#0f172a" strokeWidth="1" />
+          {/* Copper winding coils */}
+          <rect x="21" y="15" width="3" height="18" rx="1" fill="#d97706" />
+          <rect x="26" y="15" width="3" height="18" rx="1" fill="#d97706" />
+          <rect x="31" y="15" width="3" height="18" rx="1" fill="#d97706" />
+          <rect x="36" y="15" width="3" height="18" rx="1" fill="#d97706" />
+          <rect x="41" y="15" width="3" height="18" rx="1" fill="#d97706" />
+        </svg>
+      );
+
+    case 'dc_source':
+      return (
+        <svg viewBox="0 0 64 48" className="w-12 h-10 drop-shadow-xs">
+          {/* Bench power supply chassis */}
+          <rect x="10" y="8" width="44" height="32" rx="3" fill="#334155" stroke="#1e293b" strokeWidth="1" />
+          {/* Green 7-segment digital LED readout */}
+          <rect x="14" y="12" width="36" height="12" rx="1.5" fill="#0f172a" stroke="#475569" strokeWidth="0.5" />
+          <text x="32" y="21" fill="#22c55e" fontSize="7" fontWeight="900" textAnchor="middle" fontFamily="monospace">
+            5.00V
+          </text>
+          {/* Red & Black Banana Binding Posts */}
+          <circle cx="22" cy="32" r="3" fill="#dc2626" stroke="#991b1b" strokeWidth="0.5" />
+          <circle cx="42" cy="32" r="3" fill="#0f172a" stroke="#475569" strokeWidth="0.5" />
+        </svg>
+      );
+
+    case 'ac_source':
+      return (
+        <svg viewBox="0 0 64 48" className="w-12 h-10 drop-shadow-xs">
+          {/* Signal generator chassis */}
+          <rect x="10" y="8" width="44" height="32" rx="3" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+          {/* Sine wave screen */}
+          <rect x="14" y="12" width="36" height="14" rx="1.5" fill="#0f172a" stroke="#475569" strokeWidth="0.5" />
+          <path d="M 18 19 Q 22 13 26 19 T 34 19 T 42 19" fill="none" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="32" y="34" fill="#cbd5e1" fontSize="5.5" fontWeight="bold" textAnchor="middle">
+            ~ AC GEN
+          </text>
         </svg>
       );
 
@@ -118,6 +166,15 @@ const RealisticComponentThumbnail: React.FC<{ type: string }> = ({ type }) => {
           <text x="32" y="16" fill="#ffffff" fontSize="4.5" fontWeight="bold" textAnchor="middle">AA 1.5V</text>
           <text x="32" y="25" fill="#ffffff" fontSize="4.5" fontWeight="bold" textAnchor="middle">AA 1.5V</text>
           <text x="32" y="34" fill="#ffffff" fontSize="4.5" fontWeight="bold" textAnchor="middle">AA 1.5V</text>
+        </svg>
+      );
+
+    case 'buzzer':
+      return (
+        <svg viewBox="0 0 64 48" className="w-12 h-10 drop-shadow-xs">
+          <circle cx="32" cy="24" r="15" fill="#1e293b" stroke="#0f172a" strokeWidth="1.5" />
+          <circle cx="32" cy="24" r="6" fill="#0f172a" />
+          <text x="23" y="18" fill="#ef4444" fontSize="7" fontWeight="bold">+</text>
         </svg>
       );
 
@@ -202,18 +259,22 @@ export const ComponentLibrary: React.FC<Props> = ({
     { id: 'tools', label: 'Tools', icon: <Wrench className="w-4 h-4" /> },
   ];
 
-  // Primary component list shown in screenshot
+  // Primary component list with prominent passive, sources, and semiconductors
   const primaryDisplayList: { type: string; name: string; category: string }[] = [
     { type: 'resistor', name: 'Resistor', category: 'passive' },
     { type: 'capacitor', name: 'Capacitor', category: 'passive' },
+    { type: 'inductor', name: 'Inductor', category: 'passive' },
+    { type: 'dc_source', name: 'DC Supply', category: 'power' },
+    { type: 'battery', name: 'Battery (AA)', category: 'power' },
+    { type: 'ac_source', name: 'AC Source', category: 'power' },
     { type: 'led', name: 'LED', category: 'semiconductor' },
     { type: 'diode', name: 'Diode', category: 'semiconductor' },
     { type: 'switch', name: 'Switch', category: 'basic' },
     { type: 'potentiometer', name: 'Potentiometer', category: 'passive' },
-    { type: 'battery', name: 'Battery (AA)', category: 'power' },
     { type: 'arduino_uno', name: 'Arduino Uno', category: 'microcontroller' },
     { type: 'esp32', name: 'ESP32', category: 'microcontroller' },
     { type: 'dc_motor', name: 'DC Motor', category: 'motors' },
+    { type: 'buzzer', name: 'Buzzer', category: 'output' },
   ];
 
   const filteredComponents = useMemo(() => {
@@ -286,7 +347,12 @@ export const ComponentLibrary: React.FC<Props> = ({
         </div>
 
         {/* Right 2-column component card grid */}
-        <div className="flex-1 overflow-y-auto p-3 bg-white">
+        <div className="flex-1 overflow-y-auto p-3 bg-white flex flex-col">
+          <div className="mb-2 px-1 py-1 bg-slate-50 border border-slate-200/80 rounded-lg text-[10px] text-[#64748B] flex items-center justify-between font-medium">
+            <span>Drag items to pins</span>
+            <span className="text-blue-600 font-bold uppercase tracking-wider text-[9px]">Snap Ready</span>
+          </div>
+
           <div className="grid grid-cols-2 gap-2.5">
             {filteredComponents.map(item => {
               const isPlacing = activePlacementType === item.type;
@@ -297,17 +363,22 @@ export const ComponentLibrary: React.FC<Props> = ({
                   draggable
                   onDragStart={e => handleDragStart(e, item.type)}
                   onClick={() => onSelectPlacementType?.(item.type)}
-                  className={`group relative flex flex-col items-center justify-center p-3 rounded-xl transition-all cursor-pointer border ${
+                  className={`group relative flex flex-col items-center justify-center p-3 rounded-xl transition-all cursor-grab active:cursor-grabbing border ${
                     isPlacing
                       ? 'bg-blue-50 border-2 border-blue-600 ring-2 ring-blue-500/20 shadow-sm'
-                      : 'bg-white hover:bg-slate-50 border-[#E2E8F0] hover:border-slate-300 shadow-2xs hover:shadow-xs'
+                      : 'bg-white hover:bg-slate-50 border-[#E2E8F0] hover:border-blue-300 shadow-2xs hover:shadow-xs hover:border-slate-300'
                   }`}
-                  title={`Click or drag to place ${item.name}`}
+                  title={`Drag ${item.name} onto breadboard pins or click to place`}
                 >
-                  <div className="w-12 h-10 flex items-center justify-center">
+                  {/* Subtle drag handle affordance */}
+                  <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </div>
+
+                  <div className="w-12 h-10 flex items-center justify-center pointer-events-none">
                     <RealisticComponentThumbnail type={item.type} />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#172033] mt-2 text-center truncate w-full">
+                  <span className="text-[11px] font-semibold text-[#172033] mt-2 text-center truncate w-full pointer-events-none">
                     {item.name}
                   </span>
                 </div>
